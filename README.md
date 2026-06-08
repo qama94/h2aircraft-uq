@@ -41,9 +41,13 @@ Where:
 - `MTOW / OEW` — weight ratio resolved by iterative convergence
 
 **Deterministic design point** (Hoelzen 2022 parameters):
-- L/D = 16.81 | η_total = 0.444 | MTOW = 46,502 kg | Fuel fraction = 3.2% | Range = 3,000 km
+- L/D = 16.81 | η_total = 0.444 | MTOW = 48,474 kg | Range = 3,000 km
 
-The low fuel fraction (3.2% vs ~40% for kerosene aircraft) means iterative sizing converges in 2 iterations — hydrogen's high specific energy nearly eliminates the circular dependency between fuel mass and total weight.
+**Hydrogen mass model:** OEW is computed, not assumed. The dominant weight penalty of hydrogen aircraft comes from two sources:
+- **Cryogenic tank** — scales with hydrogen mass via gravimetric efficiency (η_grav = 0.35, meaning the tank weighs ~1.86× the hydrogen it holds)
+- **Fuel cell system** — scales with installed power via specific power (2 kW/kg)
+
+At the design point, the 1,566 kg of hydrogen requires a 2,908 kg tank and a 6,000 kg fuel cell system. This makes the sizing loop a genuine circular dependency (more fuel → bigger tank → heavier aircraft → more fuel), converging in 24 iterations. The weight penalty of hydrogen lives in the infrastructure, not the fuel — exactly the physical story that makes hydrogen aircraft design challenging.
 
 ---
 
@@ -56,7 +60,7 @@ All uncertainty at conceptual design stage is **epistemic** — reducible with b
 | `eta_fc` | 0.55 | 0.04 | 7.3% | Limited aviation-grade stack data |
 | `CD0` | 0.020 | 0.003 | 15.0% | Surface finish, interference drag |
 | `e` | 0.80 | 0.06 | 7.5% | Empirical correlation, wide scatter across types |
-| `OEW` | 45,000 kg | 2,000 kg | 4.4% | Tank mass, system integration uncertainty |
+| `eta_grav` | 0.35 | 0.04 | 11.4% | Immature cryogenic tank technology |
 | `AR` | 9.0 | 0.5 | 5.6% | Structural/aerodynamic trade-off unresolved |
 | `eta_prop` | 0.85 | 0.03 | 3.5% | Novel propeller design not flight-tested |
 | `eta_motor` | 0.95 | 0.01 | 1.1% | Mature technology, narrow uncertainty |
@@ -71,12 +75,12 @@ Monte Carlo with N=2,000 Latin Hypercube samples:
 
 | Statistic | Value |
 |---|---|
-| Mean range | 3,037 km |
-| Std deviation | 526 km |
-| CV | 17.3% |
-| P5 (worst 5%) | 2,252 km |
-| P50 (median) | 2,999 km |
-| P90 | 3,728 km |
+| Mean range | 3,035 km |
+| Std deviation | 496 km |
+| CV | 16.3% |
+| P5 (worst 5%) | 2,289 km |
+| P50 (median) | 3,000 km |
+| P90 | 3,686 km |
 
 **Key insight:** The deterministic model gives exactly 3,000 km. The UQ model reveals a 17.3% coefficient of variation — the aircraft could realistically achieve anywhere from 2,252 to 3,728 km depending on actual parameter values. This changes the design conversation from "does the design meet the target?" to "what confidence level does the design guarantee?"
 
@@ -90,17 +94,15 @@ Sobol first-order (S₁) and total-order (S_T) indices (N=1,024 base samples →
 
 | Parameter | S₁ | S_T | Interaction |
 |---|---|---|---|
-| `eta_fc` | **0.350** | 0.357 | 0.008 |
-| `CD0` | 0.255 | 0.262 | 0.006 |
-| `OEW` | 0.128 | 0.131 | 0.003 |
-| `e` | 0.094 | 0.097 | 0.003 |
-| `AR` | 0.076 | 0.077 | 0.001 |
-| `eta_prop` | 0.073 | 0.074 | 0.001 |
-| `eta_motor` | 0.011 | 0.011 | 0.000 |
+| `eta_fc` | **0.400** | 0.405 | 0.005 |
+| `CD0` | 0.291 | 0.297 | 0.006 |
+| `e` | 0.107 | 0.110 | 0.003 |
+| `AR` | 0.086 | 0.087 | 0.002 |
+| `eta_prop` | 0.084 | 0.084 | 0.001 |
+| `eta_motor` | 0.013 | 0.012 | 0.000 |
+| `eta_grav` | 0.012 | 0.012 | 0.000 |
 
-**Key insight:** Fuel cell efficiency (`eta_fc`) dominates with S₁=0.35, explaining 35% of range variance alone. This contradicts the initial hypothesis that aerodynamic uncertainty (Oswald factor `e`) would dominate — a hypothesis based on reasoning from conventional aircraft. The actual UQ analysis revealed that `eta_fc` uncertainty is both wider in absolute terms and enters the Breguet equation more directly than `e`, which is dampened by the square root in the L/D expression. **This is why we run the analysis rather than relying on intuition.**
-
-Interaction effects (S_T − S₁) are negligible for all parameters, indicating the range equation is nearly additive in its parameter sensitivities at this operating point.
+**Key insight:** Fuel cell efficiency (`eta_fc`) dominates with S₁=0.40, explaining 40% of range variance alone. This contradicts the initial hypothesis that aerodynamic uncertainty (Oswald factor `e`) would dominate — a hypothesis based on reasoning from conventional aircraft. The actual UQ analysis revealed that `eta_fc` uncertainty is both wider in absolute terms and enters the Breguet equation more directly than `e`, which is dampened by the square root in the L/D expression. Interestingly, tank gravimetric efficiency (`eta_grav`) drives aircraft *weight* strongly but has a small range Sobol index — because it enters through the logarithmic weight ratio, which dampens its effect on range. **This is why we run the analysis rather than relying on intuition.**
 
 ![Sobol indices](results/02_sobol_indices.png)
 
@@ -159,6 +161,7 @@ h2aircraft-uq/
 ├── README.md
 ├── src/
 │   ├── aircraft_model.py        ← Breguet range equation + iterative sizing
+│   ├── mass_model.py            ← hydrogen tank + fuel cell mass model
 │   ├── uncertainty_model.py     ← parameter distributions + aleatory/epistemic taxonomy
 │   ├── propagation.py           ← Monte Carlo + LHS (DASAL Pillar 1)
 │   ├── sensitivity.py           ← Sobol S1 + ST via SALib (DASAL Pillar 2)

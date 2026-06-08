@@ -18,16 +18,16 @@ Project: h2aircraft-uq — DASAL PhD Preparation
 """
 
 import numpy as np
+from mass_model import compute_OEW, tank_mass, fuel_cell_mass, ETA_GRAV_DEFAULT
 
 # ── Physical constants ────────────────────────────────────────────────────────
 G    = 9.81     # gravitational acceleration [m/s²]
 E_H2 = 120e6   # specific energy of hydrogen [J/kg]
 
-# ── Nominal design point (from sizing at deterministic parameters) ─────────────
-# Fixed design: MTOW and OEW are set at the deterministic design point.
-# In analysis mode, only aerodynamic and propulsion parameters vary.
-NOMINAL_MTOW   = 46502.0   # kg — from deterministic sizing
-NOMINAL_OEW    = 45000.0   # kg — operating empty weight (fixed structure)
+# ── Nominal design point ───────────────────────────────────────────────────────
+# Computed once by sizing at deterministic parameters (set at bottom of file).
+# In analysis mode, the hydrogen mass is held fixed at this nominal value.
+NOMINAL_M_H2 = None   # set after size_aircraft is defined
 
 # ── Default design parameters ─────────────────────────────────────────────────
 DEFAULT_PARAMS = {
@@ -37,8 +37,7 @@ DEFAULT_PARAMS = {
     "eta_fc":    0.55,
     "eta_motor": 0.95,
     "eta_prop":  0.85,
-    "OEW":       45000,
-    "mf_frac":   0.20,
+    "eta_grav":  0.35,   # tank gravimetric efficiency (replaces fixed OEW)
 }
 
 RANGE_TARGET = 3_000_000   # m
@@ -61,9 +60,21 @@ def breguet_range(LD, eta_total, MTOW, OEW):
     return LD * eta_total * (E_H2 / G) * np.log(MTOW / OEW)
 
 
-def size_aircraft(params=None, tol=1e-6, max_iter=100):
+def size_aircraft(params=None, tol=1e-3, max_iter=200):
     """
-    DESIGN MODE: iterative MTOW sizing to achieve RANGE_TARGET.
+    DESIGN MODE: iterative sizing to achieve RANGE_TARGET.
+
+    Now with a hydrogen-specific mass model: OEW is computed from the
+    hydrogen mass each iteration, creating a strong circular dependency:
+        more fuel -> bigger tank -> heavier OEW -> needs more fuel
+
+    Algorithm:
+      1. Guess hydrogen mass
+      2. Compute OEW = structure + tank(m_h2) + fuel cell system
+      3. Compute MTOW = OEW + m_h2
+      4. Invert Breguet to find m_h2 required for target range
+      5. Repeat until m_h2 converges
+
     Returns converged design point.
     """
     if params is None:
@@ -75,35 +86,50 @@ def size_aircraft(params=None, tol=1e-6, max_iter=100):
     eta_fc    = params["eta_fc"]
     eta_motor = params["eta_motor"]
     eta_prop  = params["eta_prop"]
-    OEW       = params["OEW"]
-    mf_frac   = params.get("mf_frac", 0.20)
+    eta_grav  = params.get("eta_grav", ETA_GRAV_DEFAULT)
 
     LD        = compute_LD(AR, CD0, e)
     eta_total = compute_eta_total(eta_fc, eta_motor, eta_prop)
 
+    # Initial guess for hydrogen mass
+    m_h2 = 4000.0
     converged = False
-    for i in range(max_iter):
-        MTOW = OEW / (1.0 - mf_frac)
-        log_ratio = RANGE_TARGET / (LD * eta_total * (E_H2 / G))
-        MTOW_new  = OEW * np.exp(log_ratio)
-        m_fuel    = MTOW_new - OEW
-        mf_new    = m_fuel / MTOW_new
 
-        if abs(mf_new - mf_frac) < tol:
-            mf_frac   = mf_new
-            MTOW      = MTOW_new
+    for i in range(max_iter):
+        # Compute OEW from current hydrogen mass (mass model)
+        OEW  = compute_OEW(m_h2, eta_grav=eta_grav)
+        MTOW = OEW + m_h2
+
+        # Invert Breguet: required ln(MTOW/OEW) for target range
+        log_ratio = RANGE_TARGET / (LD * eta_total * (E_H2 / G))
+        # MTOW/OEW = exp(log_ratio), so MTOW = OEW * exp(log_ratio)
+        # But OEW itself depends on m_h2 — so we solve iteratively
+        MTOW_req  = OEW * np.exp(log_ratio)
+        m_h2_new  = MTOW_req - OEW
+
+        # Relaxation for stable convergence
+        m_h2_next = 0.5 * m_h2 + 0.5 * m_h2_new
+
+        if abs(m_h2_next - m_h2) < tol:
+            m_h2 = m_h2_next
             converged = True
             break
-        mf_frac = mf_new
+        m_h2 = m_h2_next
 
+    # Final converged values
+    OEW     = compute_OEW(m_h2, eta_grav=eta_grav)
+    MTOW    = OEW + m_h2
     range_m = breguet_range(LD, eta_total, MTOW, OEW)
 
     return {
         "range_m":    range_m,
         "range_km":   range_m / 1000,
         "MTOW":       MTOW,
-        "m_fuel":     MTOW - OEW,
-        "mf_frac":    mf_frac,
+        "OEW":        OEW,
+        "m_fuel":     m_h2,
+        "m_tank":     tank_mass(m_h2, eta_grav),
+        "m_fc":       fuel_cell_mass(),
+        "mf_frac":    m_h2 / MTOW,
         "LD":         LD,
         "eta_total":  eta_total,
         "converged":  converged,
@@ -113,16 +139,17 @@ def size_aircraft(params=None, tol=1e-6, max_iter=100):
 
 def analyse_aircraft(params):
     """
-    ANALYSIS MODE: given uncertain parameters and FIXED design (MTOW, OEW),
-    compute the range this aircraft actually achieves.
+    ANALYSIS MODE: given uncertain parameters and a FIXED physical aircraft,
+    compute the range it achieves.
 
-    This is the correct mode for uncertainty propagation:
-    - The aircraft was DESIGNED for 3000 km at the nominal parameter values
-    - Now we ask: if the real parameters differ from nominal, what range do we get?
+    The aircraft is DESIGNED once at nominal parameters (fixing m_h2 and the
+    physical airframe). In analysis mode the hydrogen mass and structure are
+    fixed — only the performance parameters (aerodynamics, propulsion) and
+    the tank gravimetric efficiency vary, changing the achieved range.
 
     Parameters
     ----------
-    params : dict with keys AR, CD0, e, eta_fc, eta_motor, eta_prop, OEW
+    params : dict with keys AR, CD0, e, eta_fc, eta_motor, eta_prop, eta_grav
 
     Returns
     -------
@@ -134,11 +161,14 @@ def analyse_aircraft(params):
     eta_fc    = params["eta_fc"]
     eta_motor = params["eta_motor"]
     eta_prop  = params["eta_prop"]
-    OEW       = params.get("OEW", NOMINAL_OEW)
+    eta_grav  = params.get("eta_grav", ETA_GRAV_DEFAULT)
 
-    # Fixed fuel mass from nominal design
-    m_fuel = NOMINAL_MTOW - NOMINAL_OEW
-    MTOW   = OEW + m_fuel   # OEW varies but fuel is fixed from design
+    # Fixed hydrogen mass from nominal design
+    m_h2 = NOMINAL_M_H2
+
+    # OEW depends on tank gravimetric efficiency (which can vary)
+    OEW  = compute_OEW(m_h2, eta_grav=eta_grav)
+    MTOW = OEW + m_h2
 
     LD        = compute_LD(AR, CD0, e)
     eta_total = compute_eta_total(eta_fc, eta_motor, eta_prop)
@@ -147,21 +177,27 @@ def analyse_aircraft(params):
     return range_m / 1000
 
 
+# ── Set nominal design point at module load ───────────────────────────────────
+_nominal_design = size_aircraft(DEFAULT_PARAMS.copy())
+NOMINAL_M_H2 = _nominal_design["m_fuel"]
+
+
 if __name__ == "__main__":
-    # Design mode
     result = size_aircraft()
-    print("=" * 50)
+    print("=" * 55)
     print("  H2 Aircraft — Deterministic Design Point")
-    print("=" * 50)
+    print("=" * 55)
     print(f"  Converged:       {result['converged']} ({result['iterations']} iters)")
     print(f"  L/D ratio:       {result['LD']:.2f}")
     print(f"  eta_total:       {result['eta_total']:.3f}")
     print(f"  MTOW:            {result['MTOW']:,.0f} kg")
-    print(f"  Fuel mass:       {result['m_fuel']:,.0f} kg")
-    print(f"  Fuel fraction:   {result['mf_frac']:.3f}")
+    print(f"  OEW:             {result['OEW']:,.0f} kg")
+    print(f"  Hydrogen mass:   {result['m_fuel']:,.0f} kg")
+    print(f"  Tank mass:       {result['m_tank']:,.0f} kg")
+    print(f"  Fuel cell mass:  {result['m_fc']:,.0f} kg")
+    print(f"  Fuel fraction:   {result['mf_frac']*100:.1f} %")
     print(f"  Range:           {result['range_km']:.1f} km")
-    print("=" * 50)
+    print("=" * 55)
 
-    # Analysis mode check — should give ~3000 km at nominal params
     range_check = analyse_aircraft(DEFAULT_PARAMS)
     print(f"\n  Analysis mode check: {range_check:.1f} km (should be ~3000 km)")

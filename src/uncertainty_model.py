@@ -86,7 +86,7 @@ PARAMETERS = {
             "STRUCTURAL MODELLING ASSUMPTION — not a tuneable parameter. "
             "The correlation itself may not hold for this configuration. "
             "Reducible only with dedicated aerodynamic testing or high-fidelity "
-            "CFD across the full flight envelope. Largest epistemic contributor."
+            "CFD across the full flight envelope."
         ),
     },
 
@@ -137,18 +137,20 @@ PARAMETERS = {
 
     # ── Weight parameters ─────────────────────────────────────────────────────
 
-    "OEW": {
-        "mean":   45000,
-        "std":    2000,
-        "bounds": [40000, 50000],
+    "eta_grav": {
+        "mean":   0.35,
+        "std":    0.04,
+        "bounds": [0.25, 0.50],
         "dist":   "normal",
         "type":   "epistemic",
-        "unit":   "kg",
+        "unit":   "-",
         "note":   (
-            "Operating empty weight uncertainty from hydrogen tank mass, "
-            "fuel cell system integration mass, and structural weight "
-            "estimation accuracy at conceptual stage. "
-            "Reducible with detailed structural and systems design."
+            "Cryogenic tank gravimetric efficiency: m_H2 / (m_H2 + m_tank). "
+            "Large uncertainty because liquid hydrogen tank technology for "
+            "aviation is immature. Values range 0.25-0.50 across studies "
+            "(Hoelzen 2022, Brewer 1991). This drives the dominant hydrogen "
+            "weight penalty and is highly reducible with tank development. "
+            "Strongly epistemic — almost no flight-validated data exists."
         ),
     },
 }

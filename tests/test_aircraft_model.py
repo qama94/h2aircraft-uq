@@ -32,6 +32,7 @@ from aircraft_model import (
 from uncertainty_model import PARAMETERS, get_salib_problem, sample_parameters
 from propagation import run_monte_carlo
 from bayesian_update import bayesian_update
+from mass_model import tank_mass, fuel_cell_mass, compute_OEW, ETA_GRAV_DEFAULT
 
 
 # ── Aircraft model tests ──────────────────────────────────────────────────────
@@ -120,7 +121,7 @@ class TestUncertaintyModel:
 
     def test_all_parameters_defined(self):
         """All required parameters must be present."""
-        required = {"AR", "CD0", "e", "eta_fc", "eta_motor", "eta_prop", "OEW"}
+        required = {"AR", "CD0", "e", "eta_fc", "eta_motor", "eta_prop", "eta_grav"}
         assert required.issubset(set(PARAMETERS.keys()))
 
     def test_bounds_consistent_with_mean(self):
@@ -249,6 +250,42 @@ class TestBayesianUpdate:
         measurements = np.random.default_rng(42).normal(0.57, noise_std, 1000)
         _, post_std = bayesian_update(prior_mean, prior_std, measurements, noise_std)
         assert post_std < 0.001
+
+
+# ── Mass model tests ──────────────────────────────────────────────────────────
+
+class TestMassModel:
+
+    def test_tank_mass_positive(self):
+        """Tank mass must be positive."""
+        assert tank_mass(4000) > 0
+
+    def test_tank_heavier_than_hydrogen(self):
+        """At eta_grav=0.35, tank must be heavier than the hydrogen it holds."""
+        m_h2 = 4000
+        assert tank_mass(m_h2, eta_grav=0.35) > m_h2
+
+    def test_tank_mass_scales_with_hydrogen(self):
+        """More hydrogen requires a bigger tank."""
+        assert tank_mass(8000) > tank_mass(4000)
+
+    def test_better_gravimetric_efficiency_lighter_tank(self):
+        """Higher gravimetric efficiency must give a lighter tank."""
+        assert tank_mass(4000, eta_grav=0.50) < tank_mass(4000, eta_grav=0.30)
+
+    def test_fuel_cell_mass_positive(self):
+        """Fuel cell system mass must be positive."""
+        assert fuel_cell_mass() > 0
+
+    def test_OEW_increases_with_hydrogen(self):
+        """OEW must increase with hydrogen mass (heavier tank)."""
+        assert compute_OEW(8000) > compute_OEW(4000)
+
+    def test_OEW_components_sum(self):
+        """OEW must equal structure + tank + fuel cell mass."""
+        m_h2 = 4000
+        expected = 38000 + tank_mass(m_h2) + fuel_cell_mass()
+        assert abs(compute_OEW(m_h2) - expected) < 1.0
 
 
 # ── Run tests ─────────────────────────────────────────────────────────────────
