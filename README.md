@@ -124,11 +124,37 @@ Conjugate Gaussian update applied to `eta_fc` (dominant parameter) as fuel cell 
 
 ---
 
-## Project Structure
+### Deterministic Optimisation
+
+Optimising AR, e, and eta_fc for maximum range at nominal parameters:
+
+| Parameter | Nominal | Optimal |
+|---|---|---|
+| AR | 9.0 | 10.5 |
+| e | 0.80 | 0.95 |
+| eta_fc | 0.55 | 0.65 |
+| L/D | 16.81 | 19.79 |
+| **Range** | **2,999 km** | **4,172 km** |
+
+The optimiser pushes AR and e to their upper bounds — maximising L/D. However this design sits in a region of high sensitivity and may be fragile to parameter uncertainty.
+
+---
+
+### Inversion Analysis — Required Parameter Accuracy
+
+Testing each parameter across a range of uncertainty levels to find the maximum allowable std for P90 ≥ 3,000 km:
+
+All parameters show "OK as-is" — the current uncertainty levels already satisfy the P90 constraint because the aircraft was designed with a nominal range of 3,000 km and the mean range under uncertainty is 3,037 km. This means the design has sufficient margin that even at the 90th percentile of the uncertainty distribution, the target range is met.
+
+**Key insight:** This result depends critically on the assumed uncertainty distributions. If real-world parameter uncertainties are wider than assumed here — particularly for eta_fc or CD0 — the P90 constraint may be violated and uncertainty reduction investment becomes necessary. This is exactly the kind of sensitivity-to-assumptions analysis DASAL is designed to formalise.
+
+![Inversion analysis](results/04_inversion.png)
+
+---
 
 ```
 h2aircraft-uq/
-├── main.py                      ← run all three pillars
+├── main.py                      ← run all six modules
 ├── requirements.txt
 ├── README.md
 ├── src/
@@ -136,11 +162,14 @@ h2aircraft-uq/
 │   ├── uncertainty_model.py     ← parameter distributions + aleatory/epistemic taxonomy
 │   ├── propagation.py           ← Monte Carlo + LHS (DASAL Pillar 1)
 │   ├── sensitivity.py           ← Sobol S1 + ST via SALib (DASAL Pillar 2)
-│   └── bayesian_update.py       ← Bayesian posterior update (DASAL Pillar 3)
+│   ├── bayesian_update.py       ← Bayesian posterior update (DASAL Pillar 3)
+│   ├── design_optimisation.py   ← deterministic optimal design
+│   └── robust_design.py         ← inversion: required accuracy per parameter
 └── results/
     ├── 01_range_distribution.png
     ├── 02_sobol_indices.png
-    └── 03_bayesian_update.png
+    ├── 03_bayesian_update.png
+    └── 04_inversion.png
 ```
 
 ---

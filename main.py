@@ -20,6 +20,8 @@ from aircraft_model import size_aircraft
 from propagation import run_monte_carlo, print_summary, plot_range_distribution
 from sensitivity import run_sobol, print_sobol_results, plot_sobol_indices
 from bayesian_update import run_bayesian_analysis, print_bayesian_summary
+from design_optimisation import run_deterministic_optimisation, print_optimisation_results
+from robust_design import inversion_analysis, print_inversion_results, plot_inversion
 import matplotlib.pyplot as plt
 
 
@@ -58,15 +60,31 @@ def main():
     )
 
     # ── Pillar 3: Bayesian update ─────────────────────────────────────────────
-    print("\n[4/4] DASAL Pillar 3 — Bayesian model-data update...")
+    print("\n[4/6] DASAL Pillar 3 — Bayesian model-data update...")
     fig, posteriors, range_stds = run_bayesian_analysis(
         save_path="results/03_bayesian_update.png"
     )
     print_bayesian_summary(posteriors, range_stds)
 
+    # ── Deterministic optimisation ────────────────────────────────────────────
+    print("\n[5/6] Deterministic design optimisation...")
+    nominal_range = mc_results["mean_range"]
+    opt_result    = run_deterministic_optimisation()
+    print_optimisation_results(nominal_range, opt_result)
+
+    # ── Inversion / robust design ─────────────────────────────────────────────
+    print("\n[6/6] Inversion analysis — required parameter accuracy...")
+    inv_results = inversion_analysis(target_p90=3000, n_steps=15, n_samples=300)
+    print_inversion_results(inv_results, target_p90=3000)
+    plot_inversion(
+        inv_results,
+        target_p90=3000,
+        save_path="results/04_inversion.png"
+    )
+
     print("\n" + "=" * 60)
     print("  All results saved to results/")
-    print("  Run complete.")
+    print("  Run complete — 6 modules, 4 plots.")
     print("=" * 60 + "\n")
 
 
