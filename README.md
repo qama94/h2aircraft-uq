@@ -169,6 +169,19 @@ With identical scatter, model-form error shifts the entire range distribution do
 
 ---
 
+### Convergence Verification
+
+Every UQ result is only as trustworthy as its convergence. Both analyses were run at increasing sample sizes to confirm the answers stabilise:
+
+- **Monte Carlo:** mean range changes by only 0.03% between N=2,000 and N=4,000 — fully converged.
+- **Sobol:** at very small base samples (N≤32) the indices are unreliable and can even go negative; they stabilise from N≈256 onward. The N=1,024 base sample used for all results is comfortably in the converged regime.
+
+This confirms the sample sizes used are adequate — an unconverged Sobol index would be meaningless.
+
+![Convergence study](results/06_convergence.png)
+
+---
+
 ```
 h2aircraft-uq/
 ├── main.py                      ← run all modules end to end
@@ -184,14 +197,16 @@ h2aircraft-uq/
 │   ├── bayesian_update.py       ← Bayesian posterior update (DASAL Pillar 3)
 │   ├── design_optimisation.py   ← deterministic optimal design
 │   ├── robust_design.py         ← inversion: required accuracy per parameter
-│   └── model_form_error.py      ← parametric vs structural error (DASAL core)
-├── tests/                       ← 42 unit tests
+│   ├── model_form_error.py      ← parametric vs structural error (DASAL core)
+│   └── convergence.py           ← Monte Carlo + Sobol convergence verification
+├── tests/                       ← 44 unit tests
 └── results/
     ├── 01_range_distribution.png
     ├── 02_sobol_indices.png
     ├── 03_bayesian_update.png
     ├── 04_inversion.png
-    └── 05_model_form_error.png
+    ├── 05_model_form_error.png
+    └── 06_convergence.png
 ```
 
 ---

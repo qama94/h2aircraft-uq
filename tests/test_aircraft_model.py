@@ -34,6 +34,7 @@ from propagation import run_monte_carlo
 from bayesian_update import bayesian_update
 from mass_model import tank_mass, fuel_cell_mass, compute_OEW, ETA_GRAV_DEFAULT
 from model_form_error import oswald_correlation, sample_parametric, sample_model_form
+from convergence import monte_carlo_convergence
 
 
 # ── Aircraft model tests ──────────────────────────────────────────────────────
@@ -320,6 +321,25 @@ class TestModelFormError:
         e_mf   = sample_model_form(9.0, 5000, bias=0.12)
         expected = e_corr * (1 - 0.12)
         assert abs(e_mf.mean() - expected) < 0.01
+
+
+# ── Convergence tests ─────────────────────────────────────────────────────────
+
+class TestConvergence:
+
+    def test_mc_converges_with_sample_size(self):
+        """Monte Carlo mean must stabilise — last two sizes within 2%."""
+        results = monte_carlo_convergence(sample_sizes=[100, 500, 1000, 2000])
+        means = results["means"]
+        rel_change = abs(means[-1] - means[-2]) / means[-1]
+        assert rel_change < 0.02, "Monte Carlo did not converge"
+
+    def test_mc_standard_error_decreases(self):
+        """Standard error of the mean must decrease with sample size."""
+        results = monte_carlo_convergence(sample_sizes=[100, 1000])
+        ns  = np.array(results["sample_sizes"])
+        sem = results["stds"] / np.sqrt(ns)
+        assert sem[-1] < sem[0], "Standard error did not decrease"
 
 
 # ── Run tests ─────────────────────────────────────────────────────────────────
