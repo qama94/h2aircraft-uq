@@ -1,5 +1,7 @@
 # h2aircraft-uq
 
+![tests](https://github.com/qama94/h2aircraft-uq/actions/workflows/tests.yml/badge.svg)
+
 **Uncertainty-Aware Conceptual Design of a Medium-Haul Hydrogen Fuel Cell Aircraft**
 
 *DASAL PhD Application Preparation — Gamar Ismayilova, June 2026*
@@ -182,6 +184,20 @@ This confirms the sample sizes used are adequate — an unconverged Sobol index 
 
 ---
 
+### Input Correlation — Testing the Independence Assumption
+
+The baseline analysis assumes all parameters are independent. In reality, some are physically linked — for example, aspect ratio and zero-lift drag share wing design decisions. Using a Gaussian copula to induce an AR-CD0 correlation while keeping the marginals fixed shows:
+
+- Independent (ρ=0): σ(range) = 357 km
+- Positive correlation (ρ=+0.7): σ = 329 km (−8%)
+- Negative correlation (ρ=−0.7): σ = 387 km (+8%)
+
+Ignoring real correlations mis-estimates system uncertainty by up to 8% for a single parameter pair. In a coupled digital thread with many shared technology assumptions, dependence structure must be modelled explicitly — independence is an assumption, not a fact.
+
+![Correlated inputs](results/07_correlated_inputs.png)
+
+---
+
 ```
 h2aircraft-uq/
 ├── main.py                      ← run all modules end to end
@@ -198,15 +214,18 @@ h2aircraft-uq/
 │   ├── design_optimisation.py   ← deterministic optimal design
 │   ├── robust_design.py         ← inversion: required accuracy per parameter
 │   ├── model_form_error.py      ← parametric vs structural error (DASAL core)
-│   └── convergence.py           ← Monte Carlo + Sobol convergence verification
-├── tests/                       ← 44 unit tests
+│   ├── convergence.py           ← Monte Carlo + Sobol convergence verification
+│   └── correlated_inputs.py     ← input correlation via Gaussian copula
+├── tests/                       ← 48 unit tests
+├── .github/workflows/tests.yml  ← CI: runs tests on Python 3.10–3.12
 └── results/
     ├── 01_range_distribution.png
     ├── 02_sobol_indices.png
     ├── 03_bayesian_update.png
     ├── 04_inversion.png
     ├── 05_model_form_error.png
-    └── 06_convergence.png
+    ├── 06_convergence.png
+    └── 07_correlated_inputs.png
 ```
 
 ---

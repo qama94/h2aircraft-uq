@@ -35,6 +35,7 @@ from bayesian_update import bayesian_update
 from mass_model import tank_mass, fuel_cell_mass, compute_OEW, ETA_GRAV_DEFAULT
 from model_form_error import oswald_correlation, sample_parametric, sample_model_form
 from convergence import monte_carlo_convergence
+from correlated_inputs import sample_correlated, propagate as propagate_corr
 
 
 # ── Aircraft model tests ──────────────────────────────────────────────────────
@@ -340,6 +341,37 @@ class TestConvergence:
         ns  = np.array(results["sample_sizes"])
         sem = results["stds"] / np.sqrt(ns)
         assert sem[-1] < sem[0], "Standard error did not decrease"
+
+
+# ── Correlated inputs tests ───────────────────────────────────────────────────
+
+class TestCorrelatedInputs:
+
+    def test_sample_correlated_shape(self):
+        """Correlated sampling must return correct number of samples."""
+        samples = sample_correlated(corr_AR_CD0=0.5, n=200)
+        for name, vals in samples.items():
+            assert len(vals) == 200
+
+    def test_correlation_is_induced(self):
+        """Requested AR-CD0 correlation must actually appear in samples."""
+        samples = sample_correlated(corr_AR_CD0=0.7, n=5000)
+        rho = np.corrcoef(samples["AR"], samples["CD0"])[0, 1]
+        assert rho > 0.5, f"Induced correlation too weak: {rho:.2f}"
+
+    def test_independent_has_low_correlation(self):
+        """Independent sampling must give near-zero AR-CD0 correlation."""
+        samples = sample_correlated(corr_AR_CD0=0.0, n=5000)
+        rho = np.corrcoef(samples["AR"], samples["CD0"])[0, 1]
+        assert abs(rho) < 0.1, f"Spurious correlation: {rho:.2f}"
+
+    def test_correlation_affects_output_spread(self):
+        """Positive AR-CD0 correlation must reduce range std vs independent."""
+        s_indep = sample_correlated(corr_AR_CD0=0.0, n=1500)
+        s_pos   = sample_correlated(corr_AR_CD0=0.7, n=1500)
+        std_indep = propagate_corr(s_indep).std()
+        std_pos   = propagate_corr(s_pos).std()
+        assert std_pos < std_indep
 
 
 # ── Run tests ─────────────────────────────────────────────────────────────────
