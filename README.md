@@ -154,11 +154,27 @@ All parameters show "OK as-is" — the current uncertainty levels already satisf
 
 ---
 
+### Model-Form Error vs Parametric Uncertainty
+
+The intellectual core of DASAL: not all uncertainty is the same kind. The Oswald factor `e` is estimated from the Raymer empirical correlation, fit on conventional aircraft. There are two distinct ways this can be wrong:
+
+- **Parametric uncertainty** — the correlation is correct, but the true value scatters around it. Measuring `e` on the actual aircraft shrinks this uncertainty toward the true value. *Data fixes it.*
+- **Model-form error** — the correlation itself is biased for a novel hydrogen aircraft (tank-fuselage integration adds interference drag the correlation never captured). Measuring `e` on conventional aircraft converges the belief to the *wrong* value. *Data does not fix it — the model structure is wrong.*
+
+With identical scatter, model-form error shifts the entire range distribution down by ~185 km. When measurement data is added, the parametric belief converges to the truth (gap → ~15 km) while the model-form belief leaves a persistent ~190 km gap that never closes.
+
+**This is exactly the problem stated in the motivation:** *adjusting parameters moved the prediction but never closed the gap, because the mechanism driving the discrepancy was not in the model at all.* In a coupled digital thread, a structural error in one component propagates and looks like parametric uncertainty in the system KPIs — until a framework explicitly separates them. That separation is what DASAL builds.
+
+![Model-form error](results/05_model_form_error.png)
+
+---
+
 ```
 h2aircraft-uq/
-├── main.py                      ← run all six modules
+├── main.py                      ← run all modules end to end
 ├── requirements.txt
 ├── README.md
+├── REFERENCES.md
 ├── src/
 │   ├── aircraft_model.py        ← Breguet range equation + iterative sizing
 │   ├── mass_model.py            ← hydrogen tank + fuel cell mass model
@@ -167,12 +183,15 @@ h2aircraft-uq/
 │   ├── sensitivity.py           ← Sobol S1 + ST via SALib (DASAL Pillar 2)
 │   ├── bayesian_update.py       ← Bayesian posterior update (DASAL Pillar 3)
 │   ├── design_optimisation.py   ← deterministic optimal design
-│   └── robust_design.py         ← inversion: required accuracy per parameter
+│   ├── robust_design.py         ← inversion: required accuracy per parameter
+│   └── model_form_error.py      ← parametric vs structural error (DASAL core)
+├── tests/                       ← 42 unit tests
 └── results/
     ├── 01_range_distribution.png
     ├── 02_sobol_indices.png
     ├── 03_bayesian_update.png
-    └── 04_inversion.png
+    ├── 04_inversion.png
+    └── 05_model_form_error.png
 ```
 
 ---

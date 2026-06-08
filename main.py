@@ -22,6 +22,7 @@ from sensitivity import run_sobol, print_sobol_results, plot_sobol_indices
 from bayesian_update import run_bayesian_analysis, print_bayesian_summary
 from design_optimisation import run_deterministic_optimisation, print_optimisation_results
 from robust_design import inversion_analysis, print_inversion_results, plot_inversion
+from model_form_error import run_analysis as run_model_form, print_summary as print_mf_summary
 import matplotlib.pyplot as plt
 
 
@@ -34,7 +35,7 @@ def main():
     print("=" * 60)
 
     # ── Deterministic design point ────────────────────────────────────────────
-    print("\n[1/4] Deterministic design point...")
+    print("\n[1/7] Deterministic design point...")
     result = size_aircraft()
     print(f"  L/D = {result['LD']:.2f}  |  "
           f"eta_total = {result['eta_total']:.3f}  |  "
@@ -42,7 +43,7 @@ def main():
           f"Range = {result['range_km']:.0f} km")
 
     # ── Pillar 1: Monte Carlo propagation ─────────────────────────────────────
-    print("\n[2/4] DASAL Pillar 1 — Monte Carlo uncertainty propagation...")
+    print("\n[2/7] DASAL Pillar 1 — Monte Carlo uncertainty propagation...")
     mc_results = run_monte_carlo(n_samples=2000, seed=42)
     print_summary(mc_results)
     plot_range_distribution(
@@ -51,7 +52,7 @@ def main():
     )
 
     # ── Pillar 2: Sobol sensitivity analysis ──────────────────────────────────
-    print("\n[3/4] DASAL Pillar 2 — Sobol sensitivity analysis...")
+    print("\n[3/7] DASAL Pillar 2 — Sobol sensitivity analysis...")
     Si, problem = run_sobol(n_base=1024, seed=42)
     dominant_name, dominant_s1 = print_sobol_results(Si, problem)
     plot_sobol_indices(
@@ -60,20 +61,20 @@ def main():
     )
 
     # ── Pillar 3: Bayesian update ─────────────────────────────────────────────
-    print("\n[4/6] DASAL Pillar 3 — Bayesian model-data update...")
+    print("\n[4/7] DASAL Pillar 3 — Bayesian model-data update...")
     fig, posteriors, range_stds = run_bayesian_analysis(
         save_path="results/03_bayesian_update.png"
     )
     print_bayesian_summary(posteriors, range_stds)
 
     # ── Deterministic optimisation ────────────────────────────────────────────
-    print("\n[5/6] Deterministic design optimisation...")
+    print("\n[5/7] Deterministic design optimisation...")
     nominal_range = mc_results["mean_range"]
     opt_result    = run_deterministic_optimisation()
     print_optimisation_results(nominal_range, opt_result)
 
     # ── Inversion / robust design ─────────────────────────────────────────────
-    print("\n[6/6] Inversion analysis — required parameter accuracy...")
+    print("\n[6/7] Inversion analysis — required parameter accuracy...")
     inv_results = inversion_analysis(target_p90=3000, n_steps=15, n_samples=300)
     print_inversion_results(inv_results, target_p90=3000)
     plot_inversion(
@@ -82,9 +83,16 @@ def main():
         save_path="results/04_inversion.png"
     )
 
+    # ── Model-form vs parametric error ────────────────────────────────────────
+    print("\n[7/7] Model-form error vs parametric uncertainty...")
+    fig_mf, range_param, range_mf, mf_data = run_model_form(
+        save_path="results/05_model_form_error.png"
+    )
+    print_mf_summary(range_param, range_mf, mf_data)
+
     print("\n" + "=" * 60)
     print("  All results saved to results/")
-    print("  Run complete — 6 modules, 4 plots.")
+    print("  Run complete — 8 modules, 5 plots, 42 tests.")
     print("=" * 60 + "\n")
 
 

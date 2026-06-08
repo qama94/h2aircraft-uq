@@ -33,6 +33,7 @@ from uncertainty_model import PARAMETERS, get_salib_problem, sample_parameters
 from propagation import run_monte_carlo
 from bayesian_update import bayesian_update
 from mass_model import tank_mass, fuel_cell_mass, compute_OEW, ETA_GRAV_DEFAULT
+from model_form_error import oswald_correlation, sample_parametric, sample_model_form
 
 
 # ── Aircraft model tests ──────────────────────────────────────────────────────
@@ -286,6 +287,39 @@ class TestMassModel:
         m_h2 = 4000
         expected = 38000 + tank_mass(m_h2) + fuel_cell_mass()
         assert abs(compute_OEW(m_h2) - expected) < 1.0
+
+
+# ── Model-form error tests ────────────────────────────────────────────────────
+
+class TestModelFormError:
+
+    def test_oswald_correlation_reasonable(self):
+        """Oswald correlation must give a physically reasonable value."""
+        e = oswald_correlation(9.0)
+        assert 0.6 < e < 0.95
+
+    def test_oswald_decreases_with_AR(self):
+        """Raymer correlation: Oswald factor decreases with aspect ratio."""
+        assert oswald_correlation(12.0) < oswald_correlation(7.0)
+
+    def test_model_form_lower_than_parametric(self):
+        """Model-form biased samples must have a lower mean than parametric."""
+        e_param = sample_parametric(9.0, 2000)
+        e_mf    = sample_model_form(9.0, 2000)
+        assert e_mf.mean() < e_param.mean()
+
+    def test_parametric_centered_on_correlation(self):
+        """Parametric samples must center on the correlation value."""
+        e_corr  = oswald_correlation(9.0)
+        e_param = sample_parametric(9.0, 5000)
+        assert abs(e_param.mean() - e_corr) < 0.01
+
+    def test_model_form_bias_magnitude(self):
+        """Model-form bias should shift mean down by roughly the bias fraction."""
+        e_corr = oswald_correlation(9.0)
+        e_mf   = sample_model_form(9.0, 5000, bias=0.12)
+        expected = e_corr * (1 - 0.12)
+        assert abs(e_mf.mean() - expected) < 0.01
 
 
 # ── Run tests ─────────────────────────────────────────────────────────────────
