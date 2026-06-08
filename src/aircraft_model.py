@@ -13,8 +13,6 @@ The circular dependency in sizing:
   m_fuel depends on range, which depends on MTOW
   → resolved by iterative convergence
 
-Author: Gamar Ismayilova
-Project: h2aircraft-uq — DASAL PhD Preparation
 """
 
 import numpy as np

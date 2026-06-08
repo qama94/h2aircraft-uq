@@ -1,26 +1,9 @@
 """
-propagation.py
---------------
-Monte Carlo uncertainty propagation for the hydrogen aircraft range model.
+Monte Carlo uncertainty propagation (DASAL Pillar 1).
 
-Uses Latin Hypercube Sampling (LHS) instead of pure random Monte Carlo
-for better coverage of the input space with fewer model evaluations.
-
-Why LHS over pure Monte Carlo?
-  Pure Monte Carlo draws inputs completely randomly — by chance, some regions
-  of the input space get many samples and others get few. LHS divides each
-  input distribution into N equal-probability intervals and draws exactly one
-  sample from each interval. This guarantees uniform coverage of the full
-  input range, giving more accurate statistics with fewer model evaluations.
-  For N=2000 samples, LHS typically achieves the accuracy of ~5000-10000
-  pure Monte Carlo samples.
-
-DASAL Pillar 1: Uncertainty Propagation
-  Given uncertain inputs → what is the distribution of aircraft range?
-  How wide is our confidence interval on the 3000 km target?
-
-Author: Gamar Ismayilova
-Project: h2aircraft-uq — DASAL PhD Preparation
+Uses Latin Hypercube Sampling for efficient coverage of the input space.
+Propagates parameter uncertainty through the range model to get the
+distribution of achievable range and its confidence intervals.
 """
 
 import numpy as np

@@ -19,8 +19,6 @@ This replaces the fixed OEW assumption with a computed structural mass
 that responds to the hydrogen system size — making the iterative sizing
 loop physically meaningful (strong circular dependency).
 
-Author: Gamar Ismayilova
-Project: h2aircraft-uq — DASAL PhD Preparation
 """
 
 import numpy as np

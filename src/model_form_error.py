@@ -33,8 +33,6 @@ This is exactly the DASAL problem: in a coupled digital thread, a
 structural error in one component looks like parametric uncertainty
 in the system KPIs until a framework explicitly separates them.
 
-Author: Gamar Ismayilova
-Project: h2aircraft-uq — DASAL PhD Preparation
 """
 
 import numpy as np

@@ -12,8 +12,6 @@ The key result: optimal deterministic design is NOT the same as optimal
 robust design — because the deterministic optimum may sit in a region
 of high sensitivity, making it fragile to parameter uncertainty.
 
-Author: Gamar Ismayilova
-Project: h2aircraft-uq — DASAL PhD Preparation
 """
 
 import numpy as np

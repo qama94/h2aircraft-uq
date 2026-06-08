@@ -23,8 +23,6 @@ Key distinction this module illustrates (DASAL Pillar 3):
 This connects directly to Dr. Dwight's published work on Bayesian
 calibration of computer models and data assimilation.
 
-Author: Gamar Ismayilova
-Project: h2aircraft-uq — DASAL PhD Preparation
 """
 
 import numpy as np

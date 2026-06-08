@@ -21,8 +21,6 @@ References:
   Raymer 2018  — aircraft design: a conceptual approach (aerodynamic parameters)
   SALib docs   — parameter bounds format for Sobol sampling
 
-Author: Gamar Ismayilova
-Project: h2aircraft-uq — DASAL PhD Preparation
 """
 
 import numpy as np

@@ -4,7 +4,7 @@
 
 **Uncertainty-Aware Conceptual Design of a Medium-Haul Hydrogen Fuel Cell Aircraft**
 
-*DASAL PhD Application Preparation — Gamar Ismayilova, June 2026*
+*A physics-based uncertainty quantification study — Gamar Ismayilova, June 2026*
 
 ---
 

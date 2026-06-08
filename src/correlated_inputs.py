@@ -25,8 +25,6 @@ Method:
   to its marginal distribution. This separates the dependence structure
   (correlation matrix) from the marginals (each parameter's distribution).
 
-Author: Gamar Ismayilova
-Project: h2aircraft-uq — DASAL PhD Preparation
 """
 
 import numpy as np

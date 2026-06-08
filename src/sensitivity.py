@@ -1,32 +1,9 @@
 """
-sensitivity.py
---------------
-Global sensitivity analysis for the hydrogen aircraft range model.
+Global sensitivity analysis via Sobol indices (DASAL Pillar 2).
 
-Uses Sobol variance decomposition to identify which uncertain input
-parameters contribute most to the output (range) uncertainty.
-
-Why Sobol indices over simpler methods (e.g. correlation coefficients)?
-  - Correlation coefficients assume linear relationships
-  - Sobol indices capture non-linear effects and parameter interactions
-  - Sobol indices decompose the total output variance into contributions
-    from individual parameters (S1) and their interactions (ST - S1)
-  - This is the gold standard for global sensitivity analysis
-
-Two index types:
-  S1 (first-order)  — fraction of output variance explained by this
-                      parameter alone, ignoring interactions
-  ST (total-order)  — fraction of output variance explained by this
-                      parameter including all its interactions with others
-  ST - S1           — interaction effects: how much this parameter's
-                      influence depends on the values of other parameters
-
-DASAL Pillar 2: Sensitivity Analysis
-  Which parameter, if pinned down precisely, would most reduce range
-  uncertainty? → guides where to invest measurement or modelling effort.
-
-Author: Gamar Ismayilova
-Project: h2aircraft-uq — DASAL PhD Preparation
+Decomposes output variance into first-order (S1) and total-order (ST)
+contributions per parameter using SALib. Identifies which uncertain
+input drives most of the range uncertainty.
 """
 
 import numpy as np
@@ -177,8 +154,8 @@ def plot_sobol_indices(Si, problem, save_path=None):
                     fontsize=9, color="#4C72B0", fontweight="bold")
 
     # Highlight dominant parameter
-    ax.axhline(0.44, color="gray", linewidth=1.0, linestyle=":",
-               alpha=0.6, label="S₁=0.44 (cover letter claim)")
+    ax.axhline(0.40, color="gray", linewidth=1.0, linestyle=":",
+               alpha=0.5, label="dominant S₁ ≈ 0.40")
 
     ax.set_xlabel("Uncertain Parameter", fontsize=12)
     ax.set_ylabel("Sobol Sensitivity Index", fontsize=12)

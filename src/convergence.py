@@ -16,8 +16,6 @@ A result is "converged" when increasing the sample size no longer
 changes the answer beyond the confidence interval. This is essential
 for defending any UQ result — an unconverged Sobol index is meaningless.
 
-Author: Gamar Ismayilova
-Project: h2aircraft-uq — DASAL PhD Preparation
 """
 
 import numpy as np

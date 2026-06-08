@@ -20,8 +20,6 @@ Key DASAL insight:
   Robust design explicitly accounts for this — trading nominal performance
   for robustness to uncertainty.
 
-Author: Gamar Ismayilova
-Project: h2aircraft-uq — DASAL PhD Preparation
 """
 
 import numpy as np
