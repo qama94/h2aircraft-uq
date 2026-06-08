@@ -194,12 +194,17 @@ python src/bayesian_update.py   # Bayesian update
 
 ---
 
-## Key References
+## References
 
-- Hoelzen et al. (2022) — hydrogen aviation system parameters
-- Saltelli et al. — *Sensitivity Analysis in Practice*, Chapter 1
-- Dwight R.P. — Bayesian calibration and UQ in computational models
-- SALib documentation — `salib.readthedocs.io`
+Full citations with parameter justifications are in [REFERENCES.md](REFERENCES.md).
+
+Key sources:
+- **[R1]** Hoelzen et al. (2022) — hydrogen aviation system parameters. *Int. J. Hydrogen Energy*, 47(7), 3108–3130. https://doi.org/10.1016/j.ijhydene.2021.10.248
+- **[R2]** Raymer, D.P. (2018) — *Aircraft Design: A Conceptual Approach* (6th ed.). AIAA.
+- **[R3]** Saltelli et al. (2004) — *Sensitivity Analysis in Practice*. Wiley. ISBN: 978-0-470-87093-8
+- **[R4]** Herman & Usher (2017) — SALib Python library. *JOSS*, 2(9). https://doi.org/10.21105/joss.00097
+- **[R5]** Dwight & Han (2009) — Bayesian UQ for computational models. AIAA 2009-2276.
+- **[R6]** Kennedy & O'Hagan (2001) — Bayesian calibration of computer models. *JRSS-B*, 63(3).
 
 ---
 
